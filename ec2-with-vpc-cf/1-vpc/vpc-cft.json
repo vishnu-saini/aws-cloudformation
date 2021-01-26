@@ -1,0 +1,221 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "",
+  "Metadata": {},
+  "Parameters": {},
+  "Mappings": {},
+  "Resources": {
+    "VPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.1.0.0/16",
+        "Tags": [
+          {
+            "Key": "env",
+            "Value": "dev"
+          },
+          {
+            "Key": "Name",
+            "Value": { "Fn::Join": ["", [{ "Ref": "AWS::StackName" }, "-VPC"]] }
+          }
+        ]
+      }
+    },
+    "IGateway": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": { "Fn::Join": ["", [{ "Ref": "AWS::StackName" }, "-IGW"]] }
+          }
+        ]
+      }
+    },
+    "AttachGateway": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": { "Ref": "VPC" },
+        "InternetGatewayId": { "Ref": "IGateway" }
+      }
+    },
+    "PublicSubnetA": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": { "Fn::Select": [0, { "Fn::GetAZs": "" }] },
+        "VpcId": { "Ref": "VPC" },
+        "CidrBlock": "10.1.10.0/24",
+        "Tags": [
+          {
+            "Key": "env",
+            "Value": "dev"
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": ["", [{ "Ref": "AWS::StackName" }, "-Public-A"]]
+            }
+          }
+        ]
+      }
+    },
+    "PublicSubnetB": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": { "Fn::Select": [1, { "Fn::GetAZs": "" }] },
+        "VpcId": { "Ref": "VPC" },
+        "CidrBlock": "10.1.20.0/24",
+        "Tags": [
+          {
+            "Key": "env",
+            "Value": "dev"
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": ["", [{ "Ref": "AWS::StackName" }, "-Public-B"]]
+            }
+          }
+        ]
+      }
+    },
+    "PrivateSubnetA": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": { "Fn::Select": [0, { "Fn::GetAZs": "" }] },
+        "VpcId": { "Ref": "VPC" },
+        "CidrBlock": "10.1.50.0/24",
+        "Tags": [
+          {
+            "Key": "env",
+            "Value": "dev"
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": ["", [{ "Ref": "AWS::StackName" }, "-Private-A"]]
+            }
+          }
+        ]
+      }
+    },
+    "PrivateSubnetB": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "AvailabilityZone": { "Fn::Select": [1, { "Fn::GetAZs": "" }] },
+        "VpcId": { "Ref": "VPC" },
+        "CidrBlock": "10.1.60.0/24",
+        "Tags": [
+          {
+            "Key": "env",
+            "Value": "dev"
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": ["", [{ "Ref": "AWS::StackName" }, "-Private-B"]]
+            }
+          }
+        ]
+      }
+    },
+    "PublicRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": { "Ref": "VPC" },
+        "Tags": [{ "Key": "Name", "Value": "Public" }]
+      }
+    },
+    "PublicRoute1": {
+      "Type": "AWS::EC2::Route",
+      "DependsOn": "AttachGateway",
+      "Properties": {
+        "RouteTableId": { "Ref": "PublicRouteTable" },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": { "Ref": "IGateway" }
+      }
+    },
+    "PrivateRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": { "Ref": "VPC" },
+        "Tags": [{ "Key": "Name", "Value": "Private" }]
+      }
+    },
+    "PrivateRoute1": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": { "Ref": "PrivateRouteTable" },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "NatGatewayId": { "Ref": "NatGateway" }
+      }
+    },
+    "NatGateway": {
+      "Type": "AWS::EC2::NatGateway",
+      "Properties": {
+        "AllocationId": { "Fn::GetAtt": ["ElasticIPAddress", "AllocationId"] },
+        "SubnetId": { "Ref": "PublicSubnetA" },
+        "Tags": [
+          {
+            "Key": "env",
+            "Value": "dev"
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": ["", ["NAT-", { "Ref": "AWS::StackName" }]]
+            }
+          }
+        ]
+      }
+    },
+    "ElasticIPAddress": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": { "Domain": "VPC" }
+    },
+    "PublicSubnetARouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PublicSubnetA" },
+        "RouteTableId": { "Ref": "PublicRouteTable" }
+      }
+    },
+    "PublicSubnetBRouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PublicSubnetB" },
+        "RouteTableId": { "Ref": "PublicRouteTable" }
+      }
+    },
+    "PrivateSubnetARouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PrivateSubnetA" },
+        "RouteTableId": { "Ref": "PrivateRouteTable" }
+      }
+    },
+    "PrivateSubnetBRouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PrivateSubnetB" },
+        "RouteTableId": { "Ref": "PrivateRouteTable" }
+      }
+    }
+  },
+  "Outputs": {
+    "VPC": {
+      "Description": "VPC",
+      "Value": { "Ref": "VPC" },
+      "Export": {
+        "Name": "VPC"
+      }
+    },
+    "PrivateSubnetA": {
+      "Description": "Private Subnet A",
+      "Value": { "Ref": "PrivateSubnetA" },
+      "Export": {
+        "Name": "PrivateSubnetA"
+      }
+    }
+  }
+}

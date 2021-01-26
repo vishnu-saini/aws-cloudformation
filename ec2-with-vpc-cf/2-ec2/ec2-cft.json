@@ -1,0 +1,56 @@
+{
+  "Resources": {
+    "MyInstance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": "ami-04b1ddd35fd71475a",
+        "InstanceType": "t2.micro",
+        "SubnetId": { "Fn::ImportValue": "PrivateSubnetA" },
+        "SecurityGroupIds": [
+          {
+            "Ref": "SSHSecurityGroup"
+          },
+          {
+            "Ref": "ServerSecurityGroup"
+          }
+        ]
+      }
+    },
+    "SSHSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Enable SSH access via port 22",
+        "VpcId": { "Fn::ImportValue": "VPC" },
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "0.0.0.0/0",
+            "FromPort": 22,
+            "IpProtocol": "tcp",
+            "ToPort": 22
+          }
+        ]
+      }
+    },
+    "ServerSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "allow connections from specified CIDR ranges",
+        "VpcId": { "Fn::ImportValue": "VPC" },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 22,
+            "ToPort": 22,
+            "CidrIp": "192.168.1.1/32"
+          }
+        ]
+      }
+    }
+  }
+}
