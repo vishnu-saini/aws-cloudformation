@@ -4,4 +4,4 @@ stackName="myapp"
 env="stage"
 aws cloudformation delete-stack --stack-name $stackName
 aws cloudformation wait stack-delete-complete --stack-name $stackName
-aws cloudformation create-stack --stack-name $stackName --template-body $template
+aws cloudformation create-stack --stack-name $stackName --template-body $template --parameters  ParameterKey=KeyPairName,ParameterValue=MyAppKeyPair

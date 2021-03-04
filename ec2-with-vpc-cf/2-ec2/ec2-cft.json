@@ -1,10 +1,21 @@
 {
+  "Parameters": {
+    "KeyPairName": {
+      "Description": "Name of an existing EC2 KeyPair",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern": "[-_ a-zA-Z0-9]*",
+      "ConstraintDescription": "can contain only alphanumeric characters, spaces, dashes and underscores."
+    }
+  },
   "Resources": {
     "MyInstance": {
       "Type": "AWS::EC2::Instance",
       "Properties": {
         "ImageId": "ami-04b1ddd35fd71475a",
         "InstanceType": "t2.micro",
+        "KeyName": { "Ref": "KeyPairName" },
         "SubnetId": { "Fn::ImportValue": "PrivateSubnetA" },
         "SecurityGroupIds": [
           {
@@ -42,12 +53,6 @@
             "FromPort": 80,
             "ToPort": 80,
             "CidrIp": "0.0.0.0/0"
-          },
-          {
-            "IpProtocol": "tcp",
-            "FromPort": 22,
-            "ToPort": 22,
-            "CidrIp": "192.168.1.1/32"
           }
         ]
       }
