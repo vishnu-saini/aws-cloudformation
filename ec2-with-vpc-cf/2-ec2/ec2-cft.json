@@ -10,21 +10,55 @@
     }
   },
   "Resources": {
-    "MyInstance": {
+    "PrivateEC2": {
       "Type": "AWS::EC2::Instance",
       "Properties": {
         "ImageId": "ami-04b1ddd35fd71475a",
         "InstanceType": "t2.micro",
         "KeyName": { "Ref": "KeyPairName" },
+        "Tags": [{ "Key": "Name", "Value": "Private EC2" }],
         "SubnetId": { "Fn::ImportValue": "PrivateSubnetA" },
         "SecurityGroupIds": [
           {
             "Ref": "SSHSecurityGroup"
-          },
-          {
-            "Ref": "ServerSecurityGroup"
           }
         ]
+      }
+    },
+    "PublicEC2": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": "ami-04b1ddd35fd71475a",
+        "InstanceType": "t2.micro",
+        "KeyName": { "Ref": "KeyPairName" },
+        "Tags": [{ "Key": "Name", "Value": "Public EC2" }],
+        "NetworkInterfaces": [
+          {
+            "GroupSet": [
+              { "Ref": "SSHSecurityGroup" },
+              { "Ref": "ServerSecurityGroup" }
+            ],
+            "AssociatePublicIpAddress": "true",
+            "DeviceIndex": "0",
+            "DeleteOnTermination": "true",
+            "SubnetId": { "Fn::ImportValue": "PublicSubnetA" }
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe\n",
+                "yum update -y # good practice to update existing packages\n",
+                "yum install -y httpd # install web server \n",
+                "systemctl start httpd\n",
+                "systemctl enable httpd\n",
+                "echo \"Hello World\" > /var/www/html/index.html\n"
+              ]
+            ]
+          }
+        }
       }
     },
     "SSHSecurityGroup": {
